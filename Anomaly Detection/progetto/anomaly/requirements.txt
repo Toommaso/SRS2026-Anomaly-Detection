@@ -1,0 +1,10 @@
+kafka-python-ng==2.2.3
+paho-mqtt==1.6.1
+numpy==1.26.4
+scikit-learn==1.4.2
+pymongo==4.7.2
+crewai>=0.80.0
+crewai-tools>=0.17.0
+langchain-openai
+litellm
+mcp[cli]>=1.0.0

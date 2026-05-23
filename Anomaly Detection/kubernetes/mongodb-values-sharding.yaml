@@ -1,0 +1,198 @@
+# =============================================================================
+# STEP 2 - Percona PSMDB Cluster - mongodb-values.yaml
+# Chart: percona/psmdb-db
+#
+# Target: cluster Kubernetes 2 nodi, architettura arm64
+#
+# Topologia su 2 nodi fisici:
+#   Replica Set rs0:  2 mongod (primary + secondary) + 1 arbiter
+#   Config Server:    gestito internamente dallo sharding (stesso schema)
+#   Mongos:           2 istanze (stateless)
+#
+# NOTA: unsafeFlags.replsetSize e unsafeFlags.mongosSize sono necessari
+# perché il default del chart richiede minimo 3 istanze per replica set
+# e 3 config server. Con 2 nodi dobbiamo derogare a questa regola.
+# =============================================================================
+
+crVersion: 1.22.0
+
+# ---------------------------------------------------------------------------
+# Immagine - percona/percona-server-mongodb supporta arm64 (multi-arch)
+# ---------------------------------------------------------------------------
+image:
+  repository: percona/percona-server-mongodb
+  tag: 8.0.4-1-multi
+
+# ---------------------------------------------------------------------------
+# Flag "unsafe": necessari per girare con meno di 3 repliche su 2 nodi
+# ---------------------------------------------------------------------------
+unsafeFlags:
+  tls: true               # TLS abilitato (default) (true = disabilitato)
+  replsetSize: true       # Permette replica set con meno di 3 nodi
+  mongosSize: true        # Permette meno di 3 config server e 2 mongos
+  terminationGracePeriod: false
+  backupIfUnhealthy: false
+
+
+logcollector:
+  enabled: false
+
+# ---------------------------------------------------------------------------
+# Secrets - le credenziali vengono generate automaticamente dall'operator
+# e salvate in un Secret Kubernetes chiamato "<release>-secrets".
+# Puoi recuperarle con:
+#   kubectl get secret mongodb-secrets -n mongodb -o jsonpath='{.data}'
+# ---------------------------------------------------------------------------
+secrets: {}
+
+# ---------------------------------------------------------------------------
+# Replica Set rs0 - i dati del shard
+# Topologia: 2 mongod (primary + secondary) + 1 arbiter leggero
+# ---------------------------------------------------------------------------
+replsets:
+  - name: rs0
+    size: 2   # primary + secondary (unsafeFlags.replsetSize deve essere true)
+
+    # Distribuisce i 2 mongod su nodi fisici diversi se possibile
+    affinity:
+      antiAffinityTopologyKey: kubernetes.io/hostname
+
+    resources:
+      requests:
+        cpu: 150m
+        memory: 512Mi
+      limits:
+        cpu: 350m
+        memory: 2Gi
+
+    volumeSpec:
+      pvc:
+        resources:
+          requests:
+            storage: 8Gi
+        # storageClassName: local-path  # decommenta se necessario
+
+    # Arbiter: vota nel replica set ma NON contiene dati.
+    # Garantisce il quorum (2/3) anche se un nodo fisico cade.
+    arbiter:
+      enabled: true
+      size: 1
+
+      affinity:
+        advanced:
+          podAntiAffinity:
+            preferredDuringSchedulingIgnoredDuringExecution:
+              - weight: 100
+                podAffinityTerm:
+                  topologyKey: kubernetes.io/hostname
+                  labelSelector:
+                    matchExpressions:
+                      - key: app.kubernetes.io/component
+                        operator: In
+                        values:
+                          - arbiter
+      resources:
+        requests:
+          cpu: 25m
+          memory: 64Mi
+        limits:
+          cpu: 100m
+          memory: 128Mi
+
+# ---------------------------------------------------------------------------
+# Sharding
+# ---------------------------------------------------------------------------
+sharding:
+  enabled: true
+
+  balancer:
+    enabled: true
+
+  # Config Server replica set (metadati del cluster sharded)
+  # Stessa topologia del replica set dati: 2 nodi + 1 arbiter
+  configsvrReplSet:
+    size: 2      # (unsafeFlags.mongosSize deve essere true) # è buggato, va comunque a 3
+
+#    affinity:
+#      antiAffinityTopologyKey: kubernetes.io/hostname      # non funziona per size 3 su 2 nodi
+
+    # fix to allow 3 repl on 2 nodes
+    affinity:
+      advanced:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                topologyKey: kubernetes.io/hostname
+                labelSelector:
+                  matchExpressions:
+                    - key: app.kubernetes.io/replset
+                      operator: In
+                      values:
+                        - cfg
+
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        cpu: 250m
+        memory: 512Mi
+
+    volumeSpec:
+      pvc:
+        resources:
+          requests:
+            storage: 4Gi
+        # storageClassName: local-path
+
+    arbiter:
+      enabled: false
+      size: 1
+      resources:
+        requests:
+          cpu: 25m
+          memory: 64Mi
+        limits:
+          cpu: 100m
+          memory: 128Mi
+
+  # Mongos - router stateless, 2 istanze (una per nodo)
+  mongos:
+    size: 2   # (unsafeFlags.mongosSize deve essere true)
+
+    affinity:
+      antiAffinityTopologyKey: kubernetes.io/hostname
+
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 250m
+        memory: 512Mi
+
+# ---------------------------------------------------------------------------
+# Backup - disabilitato di default.
+# Per abilitarlo serve uno storage S3-compatibile (es. MinIO, AWS S3).
+# ---------------------------------------------------------------------------
+backup:
+  enabled: false
+  # Se vuoi abilitarlo in futuro:
+  # enabled: true
+  # image:
+  #   repository: percona/percona-backup-mongodb
+  #   tag: 2.8.0
+  # storages:
+  #   s3-backup:
+  #     type: s3
+  #     s3:
+  #       bucket: my-mongo-backups
+  #       region: eu-south-1
+  #       credentialsSecret: my-s3-secret
+
+# ---------------------------------------------------------------------------
+# PMM (Percona Monitoring and Management) - disabilitato
+# ---------------------------------------------------------------------------
+pmm:
+  enabled: false

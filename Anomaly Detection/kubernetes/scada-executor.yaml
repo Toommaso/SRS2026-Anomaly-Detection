@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: scada-executor
+  namespace: factory
+  labels:
+    app: scada-executor
+spec:
+  replicas: 1          # NON scalare: un solo executor evita comandi SCADA duplicati
+  selector:
+    matchLabels:
+      app: scada-executor
+  template:
+    metadata:
+      labels:
+        app: scada-executor
+    spec:
+      containers:
+        - name: scada-executor
+          image: edoebzd/private:infra
+          command: ["python", "scada_executor.py"]
+          env:
+            - name: MONGO_URI
+              valueFrom:
+                secretKeyRef:
+                  name: infra-config
+                  key: MONGO_URI
+            - name: KAFKA_BOOTSTRAP
+              valueFrom:
+                secretKeyRef:
+                  name: infra-config
+                  key: KAFKA_BOOTSTRAP
+            - name: MONGO_DB
+              value: "factory"
+            - name: SCADA_TOPIC
+              value: "scada-events"
+            - name: POLL_INTERVAL_SECONDS
+              value: "5"
+            - name: EXECUTION_DELAY_SECONDS
+              value: "10"
+          imagePullPolicy: Always
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "128Mi"
+            limits:
+              cpu: "200m"
+              memory: "256Mi"

@@ -1,0 +1,74 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: crew-agent
+  namespace: factory
+  labels:
+    app: crew-agent
+    project: factory-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: crew-agent
+  template:
+    metadata:
+      labels:
+        app: crew-agent
+        project: factory-app
+    spec:
+      containers:
+        - name: crew-agent
+          image: edoebzd/private:crew-agent
+          env:
+            - name: KAFKA_BOOTSTRAP
+              valueFrom:
+                secretKeyRef:
+                  name: infra-config
+                  key: KAFKA_BOOTSTRAP
+            - name: MONGO_URI
+              valueFrom:
+                secretKeyRef:
+                  name: infra-config
+                  key: MONGO_URI
+            - name: OPENAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: infra-config
+                  key: OPENAI_API_KEY
+            - name: ANOMALY_TOPIC
+              value: "anomalies"
+            - name: ALERT_TOPIC
+              value: "alerts"
+            - name: GROUP_ID
+              value: "crew-agent-group"
+            - name: MONGO_DB
+              value: "factory"
+            - name: OPENAI_API_BASE
+              valueFrom:
+                secretKeyRef:
+                  name: infra-config
+                  key: OPENAI_API_BASE
+            - name: MODEL
+              valueFrom:
+                secretKeyRef:
+                  name: infra-config
+                  key: AI_MODEL
+            - name: CREW_TIMEOUT_SECONDS
+              value: "120"
+            - name: AGENT_MAX_ITER
+              value: "5"
+            - name: MAX_PARALLEL_CREWS
+              value: "5"
+            - name: LOCAL_COOLDOWN_SECONDS
+              value: "30"
+            - name: HISTORY_LIMIT
+              value: "10"
+          imagePullPolicy: Always
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "512Mi"
+            limits:
+              cpu: "500m"
+              memory: "2Gi"

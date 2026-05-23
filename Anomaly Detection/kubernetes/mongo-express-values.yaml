@@ -1,0 +1,54 @@
+# =============================================================================
+# mongo-express - values.yaml
+# Chart: https://github.com/cowboysysop/charts (cowboysysop/mongo-express)
+#
+# Immagine: mongo-express:1.0 (multi-arch, arm64 nativo)
+# Accesso esterno: via Ingress nginx su path /mongo
+# =============================================================================
+
+replicaCount: 1  # stateless, scalabile a N repliche senza problemi
+
+image:
+  repository: mongo-express
+  tag: "1.0"
+
+# -----------------------------------------------------------------------------
+# Configurazione MongoDB - punta al replica set Percona
+# Connection string per replica set con autenticazione
+# -----------------------------------------------------------------------------
+mongodbEnableAdmin: true
+mongodbAdminUsername: databaseAdmin
+#  valueFrom:
+#    secretKeyRef:
+#      name: mongodb-psmdb-db-secrets
+#      key: MONGODB_DATABASE_ADMIN_USER
+mongodbAdminPassword: fcSldEWtkiteZoEeo
+#  valueFrom:
+#    secretKeyRef:
+#      name: mongodb-psmdb-db-secrets
+#      key: MONGODB_DATABASE_ADMIN_PASSWORD
+mongodbServer: mongodb-psmdb-db-rs0.factory.svc.cluster.local
+mongodbPort: 27017
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 128Mi
+  limits:
+    cpu: 200m
+    memory: 256Mi
+
+service:
+  type: ClusterIP
+  port: 8081
+
+ingress:
+  enabled: true
+  ingressClassName: nginx
+  annotations:
+    nginx.ingress.kubernetes.io/auth-type: basic
+    nginx.ingress.kubernetes.io/auth-secret: basic-auth
+    nginx.ingress.kubernetes.io/auth-realm: "Area Riservata"
+  host: mongo-express.local
+  path: /
+  pathType: Prefix

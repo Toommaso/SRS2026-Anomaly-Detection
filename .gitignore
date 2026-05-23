@@ -1,0 +1,9 @@
+.DS_Store
+**/.DS_Store
+.idea
+/Anomaly Detection/kubernetes/auth
+/Anomaly Detection/kubernetes/.kube.config
+/Anomaly Detection/kubernetes/secret.yaml
+/Anomaly Detection/kubernetes/terraform/terraform.tfstate
+/Anomaly Detection/kubernetes/terraform/terraform.tfvars
+/Anomaly Detection/kubernetes/terraform/.terraform/

@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mongo-writer
+  namespace: factory
+  labels:
+    app: mongo-writer
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mongo-writer
+  template:
+    metadata:
+      labels:
+        app: mongo-writer
+    spec:
+      containers:
+        - name: writer
+          image: edoebzd/private:infra
+          command: ["python", "mongo_writer.py"]
+          env:
+            - name: MONGO_DB
+              value: "factory"
+            - name: SENSOR_TOPIC
+              value: "sensor-readings"
+            - name: ALERT_TOPIC
+              value: "alerts"
+            - name: KAFKA_BOOTSTRAP
+              valueFrom:
+                secretKeyRef:
+                  name: infra-config
+                  key: KAFKA_BOOTSTRAP
+            - name: MONGO_URI
+              valueFrom:
+                secretKeyRef:
+                  name: infra-config
+                  key: MONGO_URI
+          imagePullPolicy: Always
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "128Mi"
+            limits:
+              cpu: "250m"
+              memory: "256Mi"
+      restartPolicy: Always

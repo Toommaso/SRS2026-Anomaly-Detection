@@ -1,0 +1,61 @@
+# headlamp-values.yaml
+
+replicaCount: 1
+
+image:
+  repository: ghcr.io/headlamp-k8s/headlamp
+  pullPolicy: IfNotPresent
+  # tag: ""
+
+serviceAccount:
+  create: true
+  name: headlamp
+
+clusterRoleBinding:
+  create: true
+
+service:
+  type: ClusterIP
+  port: 80
+
+ingress:
+  enabled: true
+  ingressClassName: nginx
+  annotations:
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
+    # nginx.ingress.kubernetes.io/ssl-redirect: "true"  #HTTPS
+  hosts:
+    - host: headlamp.local
+      paths:
+        - path: /
+          type: Prefix
+  tls: []
+  # tls:
+  #   - secretName: headlamp-tls
+  #     hosts:
+  #       - headlamp.local
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 128Mi
+  limits:
+    cpu: 250m
+    memory: 256Mi
+
+# Configurazione app Headlamp
+config:
+  inCluster: true
+  baseURL: ""
+  pluginsDir: "/headlamp/plugins"
+
+env: []
+
+persistence:
+  enabled: false
+  # storageClass: "local-path"
+  # size: 1Gi
+
+nodeSelector: {}
+tolerations: []
+affinity: {}

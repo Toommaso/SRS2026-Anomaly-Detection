@@ -1,0 +1,21 @@
+# =============================================================================
+# STEP 1 - Strimzi Kafka Operator - kafka-operator-values.yaml
+# Chart: oci://quay.io/strimzi-helm/strimzi-kafka-operator
+#
+# Tutte le immagini sono su quay.io (nessun rate limit Docker Hub).
+# Supporto arm64 nativo.
+# =============================================================================
+
+# Namespace che l'operator deve monitorare
+watchNamespaces:
+  - factory
+
+replicaCount: 1
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 256Mi
+  limits:
+    cpu: 200m
+    memory: 512Mi

@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mqtt-kafka-bridge
+  namespace: factory
+  labels:
+    app: mqtt-kafka-bridge
+spec:
+  replicas: 1          #non supporta >1
+  selector:
+    matchLabels:
+      app: mqtt-kafka-bridge
+  template:
+    metadata:
+      labels:
+        app: mqtt-kafka-bridge
+    spec:
+      containers:
+        - name: bridge
+          image: edoebzd/private:infra
+          command: ["python", "mqtt_kafka_bridge.py"]
+          env:
+            - name: MQTT_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: infra-config
+                  key: MQTT_HOST
+            - name: KAFKA_TOPIC
+              value: "sensor-readings"
+            - name: KAFKA_BOOTSTRAP
+              valueFrom:
+                secretKeyRef:
+                  name: infra-config
+                  key: KAFKA_BOOTSTRAP
+          imagePullPolicy: Always
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "128Mi"
+            limits:
+              cpu: "250m"
+              memory: "256Mi"
+      restartPolicy: Always

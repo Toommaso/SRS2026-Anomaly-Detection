@@ -1,0 +1,91 @@
+# =============================================================================
+# STEP 2 - Strimzi Kafka Cluster - kafka-cluster.yaml
+# Applicato con: kubectl apply -f kafka-cluster.yaml -n factory
+#
+# Target: cluster Kubernetes 2 nodi, architettura arm64
+# Modalità: KRaft (no ZooKeeper)
+# Immagini: quay.io (nessun rate limit)
+#
+# Topologia su 2 nodi fisici:
+#   2 broker/controller combinati (1 per nodo)
+#   Replication factor: 2 (dati replicati su entrambi i nodi)
+# =============================================================================
+apiVersion: kafka.strimzi.io/v1
+kind: KafkaNodePool
+metadata:
+  name: combined
+  labels:
+    strimzi.io/cluster: kafka
+spec:
+  replicas: 2
+  roles:
+    - controller
+    - broker
+  storage:
+    type: persistent-claim
+    size: 8Gi
+    class: local-path
+    deleteClaim: false
+  resources:
+    requests:
+      cpu: 150m
+      memory: 512Mi
+    limits:
+      cpu: 350m
+      memory: 1Gi
+  template:
+    pod:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                      - key: strimzi.io/cluster
+                        operator: In
+                        values:
+                          - kafka
+                topologyKey: kubernetes.io/hostname
+---
+apiVersion: kafka.strimzi.io/v1
+kind: Kafka
+metadata:
+  name: kafka
+  annotations:
+    # Abilita KRaft mode (no ZooKeeper)
+    strimzi.io/node-pools: enabled
+    strimzi.io/kraft: enabled
+spec:
+  kafka:
+    version: 4.2.0
+    metadataVersion: 4.2-IV1
+
+    listeners:
+      # Listener interno al cluster Kubernetes (PLAINTEXT)
+      - name: plain
+        port: 9092
+        type: internal
+        tls: false
+      # Listener TLS interno
+      - name: tls
+        port: 9093
+        type: internal
+        tls: true
+
+    config:
+      auto.create.topics.enable: "true"
+      num.partitions: 4
+      offsets.topic.replication.factor: 2
+      default.replication.factor: 2
+      min.insync.replicas: 1
+      transaction.state.log.replication.factor: 2
+      transaction.state.log.min.isr: 1
+      log.retention.hours: 168
+      log.segment.bytes: 1073741824
+      log.retention.check.interval.ms: 300000
+#      inter.broker.protocol.version: "3.9"
+
+  entityOperator:
+    topicOperator: {}
+    userOperator: {}

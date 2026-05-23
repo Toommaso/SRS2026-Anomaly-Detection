@@ -1,0 +1,54 @@
+crVersion: 1.22.0
+
+image:
+  repository: percona/percona-server-mongodb
+  tag: 8.0.4-1-multi
+
+unsafeFlags:
+  tls: false
+  replsetSize: true
+  mongosSize: false
+  terminationGracePeriod: false
+  backupIfUnhealthy: false
+
+replsets:
+  rs0:
+    size: 2
+    affinity:
+      antiAffinityTopologyKey: kubernetes.io/hostname
+    arbiter:
+      enabled: false
+      size: 1
+      resources:
+        requests:
+          cpu: 50m
+          memory: 64Mi
+        limits:
+          cpu: 100m
+          memory: 128Mi
+    resources:
+      requests:
+        cpu: 150m
+        memory: 512Mi
+      limits:
+        cpu: 350m
+        memory: 2Gi
+    volumeSpec:
+      pvc:
+        storageClassName: local-path
+        resources:
+          requests:
+            storage: 8Gi
+
+# Sharding DISABILITATO — riattivalo con un terzo nodo
+sharding:
+  enabled: false
+
+backup:
+  enabled: false
+
+logcollector:
+  enabled: false
+
+pmm:
+  enabled: false

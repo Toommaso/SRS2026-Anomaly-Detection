@@ -1,0 +1,67 @@
+# =============================================================================
+# kafka-ui (kafbat fork) - values.yaml
+# Chart: https://ui.charts.kafbat.io
+# Repo: helm repo add kafbat-ui https://ui.charts.kafbat.io
+#
+# Immagine: ghcr.io/kafbat/kafka-ui (multi-arch, arm64 nativo)
+# Accesso esterno: via Ingress nginx
+#
+# NOTA: kafbat è il fork attivo di provectus/kafka-ui (non più mantenuto).
+# =============================================================================
+
+replicaCount: 1  # stateless, scalabile liberamente
+
+image:
+  registry: ghcr.io
+  repository: kafbat/kafka-ui
+  tag: latest
+
+# -----------------------------------------------------------------------------
+# Configurazione cluster Kafka - punta al cluster Strimzi
+# -----------------------------------------------------------------------------
+yamlApplicationConfig:
+  kafka:
+    clusters:
+      - name: factory
+        bootstrapServers: kafka-kafka-bootstrap.factory.svc.cluster.local:9092
+
+  auth:
+    type: disabled
+
+  management:
+    health:
+      ldap:
+        enabled: false
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 256Mi
+  limits:
+    cpu: 250m
+    memory: 512Mi
+
+service:
+  type: ClusterIP
+  port: 8080
+
+# -----------------------------------------------------------------------------
+# Ingress - espone kafka-ui su http://<IP_PUBBLICO>/kafka
+# -----------------------------------------------------------------------------
+ingress:
+  enabled: true
+  ingressClassName: nginx
+  annotations:
+#    nginx.ingress.kubernetes.io/rewrite-target: /$2
+#    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/auth-type: basic
+    nginx.ingress.kubernetes.io/auth-secret: basic-auth
+    nginx.ingress.kubernetes.io/auth-realm: "Area Riservata"
+
+#  host: ""
+#  path: /kafka(/|$)(.*)
+#  pathType: ImplementationSpecific
+
+  host: kafka.local
+  path: /
+  pathType: Prefix

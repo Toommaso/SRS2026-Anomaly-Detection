@@ -1,0 +1,29 @@
+# =============================================================================
+# nginx Ingress Controller - values.yaml
+# Chart: https://kubernetes.github.io/ingress-nginx
+#
+# Su OCI crea automaticamente un LoadBalancer con IP pubblico.
+# Un solo LoadBalancer per tutti i servizi esposti via Ingress.
+# =============================================================================
+
+controller:
+  replicaCount: 1
+
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 250m
+      memory: 256Mi
+
+  # Su OCI il LoadBalancer viene creato automaticamente
+  service:
+    type: LoadBalancer
+    externalTrafficPolicy: Cluster
+    annotations:
+      oci.oraclecloud.com/load-balancer-type: "nlb" # L4 balancer - free
+      # Dalla OCI Console oppure con OCI CLI:
+      # oci network subnet list --compartment-id <compartment-id> | grep -A 5 "public"
+      oci-network-load-balancer.oraclecloud.com/subnet: "ocid1.subnet.oc1.eu-frankfurt-1.aaaaaaaarshjgr2g6iwbg7kwn2y2vcngqju45n2q7krwxg36cg4vjb2hddfq"
+      service.beta.kubernetes.io/oci-load-balancer-connection-idle-timeout: "300"

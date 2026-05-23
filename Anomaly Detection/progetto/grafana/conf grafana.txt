@@ -1,0 +1,30 @@
+conf grafana
+
+porta localhost:3000 user: admin, password: admin
+
+1) Data sources -> Add Data source -> MongoDB (ludovicm67-mongodb-datasource, quello unsigned in rosso)
+   Settings datasource -> MongoDB URI: mongodb://mongos1:27017, user e password vuoti
+   Save & test deve dare un messaggio di conferma verde
+2) Dashboards -> Create dashboard -> premere il + a destra -> Configure visualization
+
+Pannello vibrazione macchine:
+Database: factory, collection: sensor_readings, query: { "machine_id": "machine_a" }
+mettere auto refresh ogni 5 secondi in alto a destra
+transformations -> add transformation -> convert field type -> mettere rpm = number
+pannello a destra -> all visualization -> Gauge
+	titolo: machine_a
+	Fields: rpm
+	text mode: Value and name
+	Unit: Number
+	Min: 0 e Max: 3000
+	Thresholds, aggiungere giallo a 2000 e rosso a 2800 (questa parte non mi torna graficamente)
+salvare in alto a destra e chiamare la dashboard Machines
+dal pannello creato: more -> duplicate
+
+Pannello storico:
+uguale a prima, ma aggiungere anche la transformation timestamp = Date, oltre a rmp = Number
+
+Pannello AI control:
+Database: factory, Collection: machine_commands, Query: {}, visualization: table
+transformations -> add transformation -> organize fields by name
+mettere issued at come prima colonna (il timestamp) e nascondere quelle non necessarie

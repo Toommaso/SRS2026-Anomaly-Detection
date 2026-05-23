@@ -1,0 +1,234 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: machine-a
+  namespace: factory
+  labels:
+    app: machine-a
+    component: simulator
+    project: factory-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: machine-a
+  template:
+    metadata:
+      labels:
+        app: machine-a
+        component: simulator
+        project: factory-app
+    spec:
+      containers:
+        - name: simulator
+          image: edoebzd/private:simulator
+          env:
+            - name: MQTT_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: infra-config
+                  key: MQTT_HOST
+            - name: MQTT_PORT
+              value: "1883"
+            - name: PUBLISH_HZ
+              value: "2"
+            - name: MACHINE_ID
+              value: "machine_a"
+            - name: FAULT_MACHINE
+              value: ""
+            - name: KAFKA_BOOTSTRAP
+              valueFrom:
+                secretKeyRef:
+                  name: infra-config
+                  key: KAFKA_BOOTSTRAP
+            - name: SCADA_TOPIC
+              value: scada-events
+            - name: SCADA_CONSUMER_GROUP
+              value: scada-events-inspector
+            - name: MACHINE_PARTITION
+              value: "0"
+          imagePullPolicy: Always
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "64Mi"
+            limits:
+              cpu: "150m"
+              memory: "128Mi"
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: machine-b
+  namespace: factory
+  labels:
+    app: machine-b
+    component: simulator
+    project: factory-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: machine-b
+  template:
+    metadata:
+      labels:
+        app: machine-b
+        component: simulator
+        project: factory-app
+    spec:
+      containers:
+        - name: simulator
+          image: edoebzd/private:simulator
+          env:
+            - name: MQTT_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: infra-config
+                  key: MQTT_HOST
+            - name: MQTT_PORT
+              value: "1883"
+            - name: PUBLISH_HZ
+              value: "2"
+            - name: MACHINE_ID
+              value: "machine_b"
+            - name: FAULT_MACHINE
+              value: ""
+            - name: KAFKA_BOOTSTRAP
+              valueFrom:
+                secretKeyRef:
+                  name: infra-config
+                  key: KAFKA_BOOTSTRAP
+            - name: SCADA_TOPIC
+              value: scada-events
+            - name: SCADA_CONSUMER_GROUP
+              value: scada-events-inspector
+            - name: MACHINE_PARTITION
+              value: "1"
+          imagePullPolicy: Always
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "64Mi"
+            limits:
+              cpu: "150m"
+              memory: "128Mi"
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: machine-c
+  namespace: factory
+  labels:
+    app: machine-c
+    component: simulator
+    project: factory-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: machine-c
+  template:
+    metadata:
+      labels:
+        app: machine-c
+        component: simulator
+        project: factory-app
+    spec:
+      containers:
+        - name: simulator
+          image: edoebzd/private:simulator
+          env:
+            - name: MQTT_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: infra-config
+                  key: MQTT_HOST
+            - name: MQTT_PORT
+              value: "1883"
+            - name: PUBLISH_HZ
+              value: "2"
+            - name: MACHINE_ID
+              value: "machine_c"
+            - name: FAULT_MACHINE
+              value: ""
+            - name: KAFKA_BOOTSTRAP
+              valueFrom:
+                secretKeyRef:
+                  name: infra-config
+                  key: KAFKA_BOOTSTRAP
+            - name: SCADA_TOPIC
+              value: scada-events
+            - name: SCADA_CONSUMER_GROUP
+              value: scada-events-inspector
+            - name: MACHINE_PARTITION
+              value: "2"
+          imagePullPolicy: Always
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "64Mi"
+            limits:
+              cpu: "150m"
+              memory: "128Mi"
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: machine-d
+  namespace: factory
+  labels:
+    app: machine-d
+    component: simulator
+    project: factory-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: machine-d
+  template:
+    metadata:
+      labels:
+        app: machine-d
+        component: simulator
+        project: factory-app
+    spec:
+      containers:
+        - name: simulator
+          image: edoebzd/private:simulator
+          env:
+            - name: MQTT_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: infra-config
+                  key: MQTT_HOST
+            - name: MQTT_PORT
+              value: "1883"
+            - name: PUBLISH_HZ
+              value: "2"
+            - name: MACHINE_ID
+              value: "machine_d"
+            - name: FAULT_MACHINE
+              value: ""
+            - name: KAFKA_BOOTSTRAP
+              valueFrom:
+                secretKeyRef:
+                  name: infra-config
+                  key: KAFKA_BOOTSTRAP
+            - name: SCADA_TOPIC
+              value: scada-events
+            - name: SCADA_CONSUMER_GROUP
+              value: scada-events-inspector
+            - name: MACHINE_PARTITION
+              value: "3"
+          imagePullPolicy: Always
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "64Mi"
+            limits:
+              cpu: "150m"
+              memory: "128Mi"

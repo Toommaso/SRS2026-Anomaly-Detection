@@ -1,0 +1,11 @@
+# Stop simulators
+kubectl scale deployment -n factory -l component=simulator --replicas=0
+
+# Start simulators
+kubectl scale deployment -n factory -l component=simulator --replicas=1
+
+# Stop simulators + crew-agent
+kubectl scale deployment -n factory -l project=factory-app --replicas=0
+
+# Start simulators + crew-agent
+kubectl scale deployment -n factory -l project=factory-app --replicas=1

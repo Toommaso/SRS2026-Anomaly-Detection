@@ -1,0 +1,445 @@
+services:
+  # ── MongoDB Sharded Cluster ───────────────────────────────────────────────────
+
+  config1:
+    image: mongo:7
+    command: mongod --configsvr --replSet configReplSet --port 27017 --bind_ip_all --dbpath /data/db --quiet
+    volumes:
+      - config1:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--port", "27017", "--eval", "db.adminCommand('ping')", "--quiet", "--norc"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  config2:
+    image: mongo:7
+    command: mongod --configsvr --replSet configReplSet --port 27017 --bind_ip_all --dbpath /data/db --quiet
+    volumes:
+      - config2:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--port", "27017", "--eval", "db.adminCommand('ping')", "--quiet", "--norc"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  config3:
+    image: mongo:7
+    command: mongod --configsvr --replSet configReplSet --port 27017 --bind_ip_all --dbpath /data/db --quiet
+    volumes:
+      - config3:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--port", "27017", "--eval", "db.adminCommand('ping')", "--quiet", "--norc"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  shard1a:
+    image: mongo:7
+    command: mongod --shardsvr --replSet shard1ReplSet --port 27017 --bind_ip_all --dbpath /data/db --quiet
+    volumes:
+      - shard1a:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--port", "27017", "--eval", "db.adminCommand('ping')", "--quiet", "--norc"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  shard1b:
+    image: mongo:7
+    command: mongod --shardsvr --replSet shard1ReplSet --port 27017 --bind_ip_all --dbpath /data/db --quiet
+    volumes:
+      - shard1b:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--port", "27017", "--eval", "db.adminCommand('ping')", "--quiet", "--norc"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  shard1c:
+    image: mongo:7
+    command: mongod --shardsvr --replSet shard1ReplSet --port 27017 --bind_ip_all --dbpath /data/db --quiet
+    volumes:
+      - shard1c:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--port", "27017", "--eval", "db.adminCommand('ping')", "--quiet", "--norc"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  shard2a:
+    image: mongo:7
+    command: mongod --shardsvr --replSet shard2ReplSet --port 27017 --bind_ip_all --dbpath /data/db --quiet
+    volumes:
+      - shard2a:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--port", "27017", "--eval", "db.adminCommand('ping')", "--quiet", "--norc"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  shard2b:
+    image: mongo:7
+    command: mongod --shardsvr --replSet shard2ReplSet --port 27017 --bind_ip_all --dbpath /data/db --quiet
+    volumes:
+      - shard2b:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--port", "27017", "--eval", "db.adminCommand('ping')", "--quiet", "--norc"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  shard2c:
+    image: mongo:7
+    command: mongod --shardsvr --replSet shard2ReplSet --port 27017 --bind_ip_all --dbpath /data/db --quiet
+    volumes:
+      - shard2c:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--port", "27017", "--eval", "db.adminCommand('ping')", "--quiet", "--norc"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  mongo-init:
+    image: mongo:7
+    restart: "no"
+    depends_on:
+      config1: { condition: service_started }
+      config2: { condition: service_started }
+      config3: { condition: service_started }
+      shard1a: { condition: service_started }
+      shard1b: { condition: service_started }
+      shard1c: { condition: service_started }
+      shard2a: { condition: service_started }
+      shard2b: { condition: service_started }
+      shard2c: { condition: service_started }
+    volumes:
+      - ./scripts/init-mongo.sh:/init-mongo.sh:ro
+    command: bash /init-mongo.sh
+
+  mongos1:
+    image: mongo:7
+    depends_on:
+      mongo-init: { condition: service_completed_successfully }
+    command: mongos --configdb configReplSet/config1:27017,config2:27017,config3:27017 --port 27017 --bind_ip_all --quiet
+    ports:
+      - "27017:27017"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mongosh", "--port", "27017", "--eval", "db.adminCommand('ping')", "--quiet", "--norc"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 30s
+
+  mongos2:
+    image: mongo:7
+    depends_on:
+      mongo-init: { condition: service_completed_successfully }
+    command: mongos --configdb configReplSet/config1:27017,config2:27017,config3:27017 --port 27017 --bind_ip_all --quiet
+    ports:
+      - "27018:27017"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mongosh", "--port", "27017", "--eval", "db.adminCommand('ping')", "--quiet", "--norc"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 30s
+
+
+  # ── MQTT Broker ───────────────────────────────────────────────────────────────
+
+  mqtt-broker:
+    image: eclipse-mosquitto:2.0
+    ports:
+      - "1883:1883"
+      - "9001:9001"
+    volumes:
+      - ./simulator/mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mosquitto_sub", "-t", "$$SYS/#", "-C", "1", "-W", "3"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  machine-a:
+    build: ./simulator
+    depends_on:
+      mqtt-broker:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    environment:
+      MQTT_HOST: mqtt-broker
+      MQTT_PORT: 1883
+      PUBLISH_HZ: 2
+      MACHINE_ID: machine_a
+      MACHINE_PARTITION: 0
+      FAULT_MACHINE: ""
+      KAFKA_BOOTSTRAP: kafka:9092
+      SCADA_TOPIC: scada-events
+      SCADA_CONSUMER_GROUP: scada-events-inspector
+    restart: unless-stopped
+
+  machine-b:
+    build: ./simulator
+    depends_on:
+      mqtt-broker:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    environment:
+      MQTT_HOST: mqtt-broker
+      MQTT_PORT: 1883
+      PUBLISH_HZ: 2
+      MACHINE_ID: machine_b
+      MACHINE_PARTITION: 1
+      FAULT_MACHINE: ""
+      KAFKA_BOOTSTRAP: kafka:9092
+      SCADA_TOPIC: scada-events
+      SCADA_CONSUMER_GROUP: scada-events-inspector
+    restart: unless-stopped
+
+  machine-c:
+    build: ./simulator
+    depends_on:
+      mqtt-broker:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    environment:
+      MQTT_HOST: mqtt-broker
+      MQTT_PORT: 1883
+      PUBLISH_HZ: 2
+      MACHINE_ID: machine_c
+      MACHINE_PARTITION: 2
+      FAULT_MACHINE: ""
+      KAFKA_BOOTSTRAP: kafka:9092
+      SCADA_TOPIC: scada-events
+      SCADA_CONSUMER_GROUP: scada-events-inspector
+    restart: unless-stopped
+
+  machine-d:
+    build: ./simulator
+    depends_on:
+      mqtt-broker:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    environment:
+      MQTT_HOST: mqtt-broker
+      MQTT_PORT: 1883
+      PUBLISH_HZ: 2
+      MACHINE_ID: machine_d
+      MACHINE_PARTITION: 3
+      FAULT_MACHINE: ""
+      KAFKA_BOOTSTRAP: kafka:9092
+      SCADA_TOPIC: scada-events
+      SCADA_CONSUMER_GROUP: scada-events-inspector
+    restart: unless-stopped
+
+
+  # ── Kafka ─────────────────────────────────────────────────────────────────────
+
+  kafka:
+    image: apache/kafka:3.7.0
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_NUM_PARTITIONS: 4
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    volumes:
+      - kafka-data:/var/lib/kafka/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "/opt/kafka/bin/kafka-topics.sh", "--bootstrap-server", "localhost:9092", "--list"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    ports:
+      - "8080:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
+    depends_on:
+      kafka:
+        condition: service_healthy
+    restart: unless-stopped
+
+
+  # ── Immagine: infra ───────────────────────────────────────────────────────────
+  # Dipendenze: kafka-python-ng, paho-mqtt, pymongo
+  # Servizi che condividono questa immagine: mqtt-kafka-bridge, mongo-writer, scada-executor
+
+  mqtt-kafka-bridge:
+    build:
+      context: ./infra
+    command: python mqtt_kafka_bridge.py
+    depends_on:
+      mqtt-broker:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    environment:
+      MQTT_HOST: mqtt-broker
+      KAFKA_BOOTSTRAP: kafka:9092
+      KAFKA_TOPIC: sensor-readings
+    restart: unless-stopped
+
+  mongo-writer:
+    build:
+      context: ./infra
+    command: python mongo_writer.py
+    depends_on:
+      kafka:
+        condition: service_healthy
+      mongos1:
+        condition: service_healthy
+      mongos2:
+        condition: service_healthy
+    environment:
+      KAFKA_BOOTSTRAP: kafka:9092
+      MONGO_URI: mongodb://mongos1:27017,mongos2:27017
+      MONGO_DB: factory
+      SENSOR_TOPIC: sensor-readings
+      ALERT_TOPIC: alerts
+    restart: unless-stopped
+
+  scada-executor:
+    build:
+      context: ./infra
+    command: python scada_executor.py
+    depends_on:
+      kafka:
+        condition: service_healthy
+      mongos1:
+        condition: service_healthy
+      mongos2:
+        condition: service_healthy
+    environment:
+      MONGO_URI: mongodb://mongos1:27017,mongos2:27017
+      MONGO_DB: factory
+      KAFKA_BOOTSTRAP: kafka:9092
+      SCADA_TOPIC: scada-events
+      POLL_INTERVAL_SECONDS: "5"
+      EXECUTION_DELAY_SECONDS: "10"
+    restart: unless-stopped
+
+
+  # ── Immagine: ml-detector ─────────────────────────────────────────────────────
+  # Dipendenze: kafka-python-ng, numpy, scikit-learn  (~200 MB)
+  # Scala orizzontalmente fino al numero di partizioni di sensor-readings (4)
+
+  ml-detector:
+    build:
+      context: ./ml-detector
+    depends_on:
+      kafka:
+        condition: service_healthy
+    environment:
+      KAFKA_BOOTSTRAP: kafka:9092
+      INPUT_TOPIC: sensor-readings
+      ANOMALY_TOPIC: anomalies
+      GROUP_ID: ml-detector-group
+      COOLDOWN_SECONDS: "60"
+      MODEL_DIR: "/data/ml_state"  # Specifichiamo la cartella definita nel codice Python
+    volumes:
+      - ml-detector-data:/data/ml_state  # Collega il volume a quella cartella
+    restart: unless-stopped
+
+
+  # ── Immagine: crew-agent ──────────────────────────────────────────────────────
+  # Dipendenze: kafka-python-ng, pymongo, numpy, crewai, langchain-openai, litellm, mcp  (~1.5 GB)
+  # Scala indipendentemente — ogni replica aggiuntiva = più chiamate LLM parallele
+
+  crew-agent:
+    build:
+      context: ./crew-agent
+    depends_on:
+      kafka:
+        condition: service_healthy
+      mongos1:
+        condition: service_healthy
+      mongos2:
+        condition: service_healthy
+    environment:
+      KAFKA_BOOTSTRAP: kafka:9092
+      ANOMALY_TOPIC: anomalies
+      ALERT_TOPIC: alerts
+      GROUP_ID: crew-agent-group
+      MONGO_URI: mongodb://mongos1:27017,mongos2:27017
+      MONGO_DB: factory
+      OPENAI_API_BASE: ""
+      OPENAI_API_KEY: ""
+      MODEL: "gemini-2.5-pro"
+      CREW_TIMEOUT_SECONDS: "120"
+      AGENT_MAX_ITER: "5"
+      MAX_PARALLEL_CREWS: "5"
+      LOCAL_COOLDOWN_SECONDS: "30"
+      HISTORY_LIMIT: "10"
+    restart: unless-stopped
+
+
+  # ── Mongo Express ─────────────────────────────────────────────────────────────
+
+  mongo-express:
+    image: mongo-express:1.0
+    ports:
+      - "8081:8081"
+    environment:
+      ME_CONFIG_MONGODB_SERVER: mongos1
+      ME_CONFIG_MONGODB_PORT: 27017
+      ME_CONFIG_BASICAUTH: "false"
+    depends_on:
+      mongos1:
+        condition: service_healthy
+    restart: unless-stopped
+
+  grafana:
+    build: ./grafana  # Percorso della sottocartella che contiene il Dockerfile
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana-storage:/var/lib/grafana
+    depends_on:
+      - mongos1
+      - mongos2
+
+
+volumes:
+  kafka-data:
+  config1:
+  config2:
+  config3:
+  shard1a:
+  shard1b:
+  shard1c:
+  shard2a:
+  shard2b:
+  shard2c:
+  ml-detector-data:
+  grafana-storage:
